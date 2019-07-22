@@ -6,9 +6,7 @@
     :width="size.w"
     :height="size.h"
     class="net-svg"
-    @mouseup='emit("dragEnd",[$event])'
-    @touchend.passive='emit("dragEnd",[$event])'
-    @touchstart.passive=''
+    v-on="wrappedListeners('svg')"
     )
 
     //-> links
@@ -16,8 +14,7 @@
         path(v-for="link in links"
           :d="linkPath(link)"
           :id="link.id"
-          @click='emit("linkClick",[$event,link])'
-          @touchstart.passive='emit("linkClick",[$event,link])'
+          v-on="wrappedListeners('link', { link })"
           v-bind='linkAttrs(link)'
           :class='linkClass(link.id)'
           :style='linkStyle(link)'
@@ -31,10 +28,8 @@
           :viewBox='svgIcon(node).attrs.viewBox'
           :width='getNodeSize(node, "width")'
           :height='getNodeSize(node, "height")'
+          v-on="wrappedListeners('node', {node, key})"
           @click='emit("nodeClick",[$event,node])'
-          @touchend.passive='emit("nodeClick",[$event,node])'
-          @mousedown.prevent='emit("dragStart",[$event,key])'
-          @touchstart.prevent='emit("dragStart",[$event,key])'
           :x='node.x - getNodeSize(node, "width") / 2'
           :y='node.y - getNodeSize(node, "height") / 2'
           :style='nodeStyle(node)'
@@ -48,10 +43,7 @@
         circle(v-else
         :key='key'
         :r="getNodeSize(node) / 2"
-        @click='emit("nodeClick",[$event,node])'
-        @touchend.passive='emit("nodeClick",[$event,node])'
-        @mousedown.prevent='emit("dragStart",[$event,key])'
-        @touchstart.prevent='emit("dragStart",[$event,key])'
+        v-on="wrappedListeners('node', {node, key})"
         :cx="node.x"
         :cy="node.y"
         :style='nodeStyle(node)'
@@ -77,6 +69,7 @@
 </template>
 <script>
 import svgExport from '../lib/js/svgExport.js'
+import { LISTENERS } from './listeners'
 
 export default {
   name: 'svg-renderer',
@@ -107,6 +100,9 @@ export default {
     }
   },
   methods: {
+    wrappedListeners(type, entity = {}) {
+      return LISTENERS[type]({ ...entity, emit: this.emit})
+    },
     getNodeSize (node, side) {
       let size = node._size || this.nodeSize
       if (side) size = node['_' + side] || size
